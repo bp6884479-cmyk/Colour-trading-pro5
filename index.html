@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="hi"><head><meta charset="utf-8">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.min.js"></script>
@@ -14,10 +15,11 @@ function showLoad(t){var l=document.getElementById("ctpLoad");if(!l){l=document.
 function hideLoad(){document.querySelectorAll("#ctpLoad").forEach(function(l){l.remove()})}
 if(!ready){document.write('<style id="ctp_hide">body>*:not(#ctpLogin):not(#ctpLoad){display:none!important}</style>');document.write('<div id="ctpLoad"><i></i><span>Loading game...</span></div>')}
 var last="";
+function note(t){try{var n=document.getElementById("ctpNote");if(!n){n=document.createElement("div");n.id="ctpNote";n.style.cssText="position:fixed;left:8px;bottom:8px;z-index:99999;background:rgba(0,0,0,.75);color:#fff;font:11px sans-serif;padding:5px 9px;border-radius:8px;max-width:80%;pointer-events:none";document.body.appendChild(n)}n.textContent=t;n.style.display="block";clearTimeout(note.t);note.t=setTimeout(function(){n.style.display="none"},6000)}catch(e){}}
 function wipe(){try{Object.keys(localStorage).forEach(function(k){if(k.indexOf("sb-")===0)localStorage.removeItem(k)})}catch(e){}try{SB.auth.signOut({scope:"local"}).catch(function(){})}catch(e){}}
 function T(p,ms){return Promise.race([p,new Promise(function(_,rj){setTimeout(function(){rj(new Error("timeout"))},ms)})])}
 async function save(){try{var s=(await T(SB.auth.getSession(),5000)).data.session;if(!s)return;var o=snap(),j=JSON.stringify(o);if(j===last)return;last=j;
-await T(SB.from("game_saves").upsert({user_id:s.user.id,data:o,updated_at:new Date().toISOString()}),8000)}catch(e){last=""}}
+var r=await T(SB.from("game_saves").upsert({user_id:s.user.id,data:o,updated_at:new Date().toISOString()},{onConflict:"user_id"}),8000);if(r.error){last="";note("Save error: "+r.error.message)}else if(!note.ok){note.ok=1;note("Cloud save OK")}}catch(e){last="";note("Save error: "+(e&&e.message||e))}}
 async function loadAndStart(s){showLoad("Signing in... Loading game");var r={},ok=false;try{r=await T(SB.from("game_saves").select("data").eq("user_id",s.user.id).maybeSingle(),6000);ok=!r.error}catch(e){r={}}
 if(ok){clearG();if(r.data&&r.data.data){var d=r.data.data;for(var k in d)localStorage.setItem(k,d[k])}}
 sessionStorage.setItem("ctp_ready",s.user.id);history.replaceState(null,"",location.pathname);location.reload()}
